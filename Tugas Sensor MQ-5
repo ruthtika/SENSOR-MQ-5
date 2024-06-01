@@ -1,0 +1,54 @@
+#include <LiquidCrystal_I2C.h>
+
+#define MQ2 34   // pin analog MQ2
+#define LED 14   // pin LED
+#define BUZZER_PIN 4   // pin Buzzer
+
+int gas;
+unsigned long dataMillis = 0;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Inisialisasi LCD (0x27 adalah alamat I2C)
+
+void setup() {
+  Serial.begin(115200);  // Inisialisasi serial
+
+  pinMode(MQ2, INPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  ledcSetup(0, 1000, 10);  // Inisialisasi LEDC channel 0 dengan frekuensi 1000 Hz dan resolusi 10 bit
+  ledcAttachPin(BUZZER_PIN, 0);  // Menghubungkan pin buzzer dengan LEDC channel 0
+
+  digitalWrite(LED, LOW);
+  digitalWrite(BUZZER_PIN, LOW);
+
+  lcd.init();  // Inisialisasi LCD
+  lcd.backlight();   // Hidupkan backlight
+  lcd.setCursor(0, 0);
+  lcd.print("Gas: ");
+}
+
+void loop() {
+  gas = analogRead(MQ2);
+
+  Serial.printf("Gas: %d\n", gas);
+
+  if (gas > 500) {
+    digitalWrite(LED, HIGH);
+    ledcWrite(0, 512); // Set buzzer dengan duty cycle 50% (nilai 512 dari 1023)
+    lcd.setCursor(5, 1);
+    lcd.print("Gas detected!");
+  } else {
+    digitalWrite(LED, LOW);
+    ledcWrite(0, 0); // Pastikan buzzer mati
+    lcd.setCursor(5, 1);
+    lcd.print("              "); // Hapus pesan sebelumnya
+  }
+
+  lcd.setCursor(5, 0);  // Posisi kursor di baris 0, kolom 5
+  lcd.print("     ");   // Hapus nilai sebelumnya
+  lcd.setCursor(5, 0);
+  lcd.print(gas);
+
+  delay(2000);  // Tampilkan setiap 2 detik sekali
+}
